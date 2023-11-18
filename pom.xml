@@ -11,6 +11,11 @@
 	</parent>
 
 	<name>Explore With Me</name>
+	<modules>
+		<module>utils</module>
+        <module>main</module>
+		<module>statistic</module>
+	</modules>
 
 	<groupId>ru.practicum</groupId>
 	<artifactId>explore-with-me</artifactId>
@@ -20,7 +25,24 @@
 	<properties>
 		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<CommonUtils.version>1.20.9</CommonUtils.version>
+		<commons-lang.version>2.5</commons-lang.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>xin.xihc</groupId>
+				<artifactId>CommonUtils</artifactId>
+				<version>${CommonUtils.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-lang</groupId>
+				<artifactId>commons-lang</artifactId>
+				<version>${commons-lang.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<pluginManagement>
