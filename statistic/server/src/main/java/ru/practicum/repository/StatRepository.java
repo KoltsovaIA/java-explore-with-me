@@ -11,18 +11,14 @@ import java.util.List;
 public interface StatRepository extends JpaRepository<Hit, Long> {
 
     @Query("select new ru.practicum.OutgoingDto(" +
-            "h.app, " +
-            "h.uri, " +
+            "h.app, h.uri, " +
             "case when :unique = true " +
             "then count(distinct(h.ip)) " +
             "else count(h.ip) " +
-            "end " +
-            ") " +
-            "from Hit h " +
-            "where h.timestamp between :start and :end " +
+            "end) " +
+            "from Hit h where h.timestamp between :start and :end " +
             "and (coalesce(:uris, null) is null or h.uri in :uris) " +
-            "group by h.app, h.uri " +
-            "order by 3 desc")
+            "group by h.app, h.uri order by 3 desc")
     List<OutgoingDto> getStat(LocalDateTime start,
                               LocalDateTime end,
                               List<String> uris,

@@ -16,12 +16,16 @@ public class Hit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
+    @Column(name = "app", length = 512)
     private String app;
 
+    @Column(name = "uri", length = 512)
     private String uri;
 
+    @Column(name = "ip", length = 22)
     private String ip;
 
     private LocalDateTime timestamp;
