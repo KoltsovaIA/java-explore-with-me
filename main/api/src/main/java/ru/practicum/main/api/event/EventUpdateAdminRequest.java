@@ -9,6 +9,7 @@ import lombok.Setter;
 import ru.practicum.constants.Constants;
 import ru.practicum.validator.DateAfterValueHourFutureValid;
 
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
@@ -36,6 +37,7 @@ public class EventUpdateAdminRequest extends EventUpdateRequest {
 
     private Boolean requestModeration;
 
+    @PositiveOrZero
     private Long participantLimit;
 
     private StateAction stateAction;

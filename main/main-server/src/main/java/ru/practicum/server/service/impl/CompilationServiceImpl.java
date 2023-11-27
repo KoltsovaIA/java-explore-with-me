@@ -2,7 +2,6 @@ package ru.practicum.server.service.impl;
 
 import com.querydsl.core.BooleanBuilder;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +17,6 @@ import ru.practicum.server.mapper.CompilationMapper;
 import ru.practicum.server.repository.CompilationRepository;
 import ru.practicum.server.repository.EventRepository;
 import ru.practicum.server.service.CompilationService;
-import ru.practicum.main.util.exception.AlreadyExistsException;
 import ru.practicum.main.util.exception.NotFoundException;
 
 import java.util.Collection;
@@ -41,29 +39,20 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     @Transactional
     public CompilationDto create(NewCompilationDto dto) {
-        try {
-            Compilation compilation = mapper.toCompilation(dto);
+        Compilation compilation = mapper.toCompilation(dto);
 
-            if (dto.getEvents() != null && !dto.getEvents().isEmpty()) {
-                BooleanBuilder builder = new BooleanBuilder();
-                builder.and(QEvent.event.id.in(dto.getEvents()));
-
-                try {
-                    Set<Event> events = StreamSupport
-                            .stream(eventRepository.findAll(builder).spliterator(), false)
-                            .collect(Collectors.toSet());
-                    compilation.setEvents(events);
-                } catch (DataIntegrityViolationException e) {
-                    throw new AlreadyExistsException("Some events  " + dto.getEvents() + " not exists.");
-                }
-            } else {
-                compilation.setEvents(new HashSet<>());
-            }
-
-            return mapper.toCompilationDto(compilationRepository.save(compilation));
-        } catch (DataIntegrityViolationException e) {
-            throw new AlreadyExistsException("Compilation with events " + dto.getEvents() + " already exists.");
+        if (dto.getEvents() != null && !dto.getEvents().isEmpty()) {
+            BooleanBuilder builder = new BooleanBuilder();
+            builder.and(QEvent.event.id.in(dto.getEvents()));
+            Set<Event> events = StreamSupport
+                    .stream(eventRepository.findAll(builder).spliterator(), false)
+                    .collect(Collectors.toSet());
+            compilation.setEvents(events);
+        } else {
+            compilation.setEvents(new HashSet<>());
         }
+
+        return mapper.toCompilationDto(compilationRepository.save(compilation));
     }
 
     @Override
@@ -94,12 +83,7 @@ public class CompilationServiceImpl implements CompilationService {
                     .collect(Collectors.toList());
             compilation.setEvents(new HashSet<>(events));
         }
-
-        try {
-            return mapper.toCompilationDto(compilationRepository.save(compilation));
-        } catch (DataIntegrityViolationException e) {
-            throw new AlreadyExistsException("Compilation with events " + dto.getEvents() + " already exists.");
-        }
+        return mapper.toCompilationDto(compilationRepository.save(compilation));
     }
 
     @Override

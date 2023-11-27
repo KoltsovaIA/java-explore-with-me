@@ -12,7 +12,6 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -64,7 +63,6 @@ public class Event {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Embedded
     @AttributeOverrides({@AttributeOverride(name = "lat", column = @Column(name = "lat")),
             @AttributeOverride(name = "lon", column = @Column(name = "lon"))})
     private Location location;

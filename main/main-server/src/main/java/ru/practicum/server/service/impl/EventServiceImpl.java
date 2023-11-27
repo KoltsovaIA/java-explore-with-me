@@ -1,7 +1,6 @@
 package ru.practicum.server.service.impl;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,14 +41,9 @@ import ru.practicum.main.util.exception.AlreadyExistsException;
 import ru.practicum.main.util.exception.NotFoundException;
 import ru.practicum.client.StatClient;
 
-import javax.persistence.EntityManager;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -68,7 +62,6 @@ public class EventServiceImpl implements EventService {
     private final LocationMapper locationMapper;
     private final RequestMapper requestMapper;
     private final StatClient statClient;
-    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -174,18 +167,20 @@ public class EventServiceImpl implements EventService {
 
         statClient.postStat(httpServletRequest);
 
-        Collection<EventShortDto> dtos = eventRepository.findAll(builder, pageable)
-                .getContent()
+        List<Event> events = new ArrayList<>(eventRepository.findAll(builder, pageable)
+                .getContent());
+        Comparator<Event> eventComparator = Comparator.comparing(Event::getCreatedOn);
+        Collection<EventShortDto> dtos = events
                 .stream()
                 .map(eventMapper::toEventShortDto)
                 .collect(Collectors.toList());
 
         if (!dtos.isEmpty()) {
-            Map<Long, Long> views = getViews(dtos);
+            Event minCreatedOnEvent = events.stream().min(eventComparator).get();
+            Map<Long, Long> views = getViews(dtos, minCreatedOnEvent.getCreatedOn());
 
             dtos.forEach(dto -> dto.setViews(views.get(dto.getId())));
         }
-
         return dtos;
     }
 
@@ -386,7 +381,6 @@ public class EventServiceImpl implements EventService {
         if (dto.getEventDate() != null) {
             event.setEventDate(dto.getEventDate());
         }
-
         return event;
     }
 
@@ -437,25 +431,10 @@ public class EventServiceImpl implements EventService {
         return builder;
     }
 
-    private Map<Long, Long> getViews(Collection<EventShortDto> dtos) {
+    private Map<Long, Long> getViews(Collection<EventShortDto> dtos, LocalDateTime startTime) {
         List<String> uris = dtos.stream()
                 .map(dto -> "/events/" + dto.getId())
                 .collect(Collectors.toList());
-
-        List<Long> ids = dtos.stream()
-                .map(EventShortDto::getId)
-                .collect(Collectors.toList());
-
-        JPAQueryFactory query = new JPAQueryFactory(entityManager);
-        QEvent qEvent = QEvent.event;
-
-        Event event = query
-                .selectFrom(qEvent)
-                .where(qEvent.id.in(ids))
-                .orderBy(qEvent.createdOn.asc())
-                .fetchFirst();
-
-        LocalDateTime startTime = event.getCreatedOn();
 
         List<OutgoingDto> stats = statClient.getStats(startTime,
                 LocalDateTime.now(),

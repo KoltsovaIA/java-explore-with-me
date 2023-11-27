@@ -9,7 +9,7 @@ import ru.practicum.main.api.request.RequestStatus;
 import ru.practicum.validator.EnumAllowedValid;
 
 import javax.validation.constraints.Size;
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -19,7 +19,7 @@ import java.util.List;
 public class RequestStatusUpdateRequest {
 
     @Size(min = 1)
-    private List<Long> requestIds;
+    private Set<Long> requestIds;
 
     @EnumAllowedValid(enumClass = RequestStatus.class, allowed = {"CONFIRMED", "REJECTED"})
     private RequestStatus status;

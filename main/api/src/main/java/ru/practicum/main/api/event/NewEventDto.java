@@ -11,6 +11,7 @@ import ru.practicum.validator.DateAfterValueHourFutureValid;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
@@ -39,11 +40,14 @@ public class NewEventDto {
     @NotNull
     private LocationDto location;
 
+    @NotNull
     private Boolean paid = false;
 
+    @NotNull
     private Boolean requestModeration = true;
 
-    private Long participantLimit = 0L;
+    @PositiveOrZero
+    private long participantLimit = 0L;
 
     @NotNull
     @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
