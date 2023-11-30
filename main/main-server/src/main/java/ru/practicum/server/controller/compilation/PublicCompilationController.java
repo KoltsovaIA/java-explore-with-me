@@ -26,7 +26,7 @@ public class PublicCompilationController {
     }
 
     @GetMapping
-    public Collection<CompilationDto> getAll(@RequestParam(required = false) boolean pinned,
+    public Collection<CompilationDto> getAll(@RequestParam(required = false) Boolean pinned,
                                              @RequestParam(defaultValue = "0") @Min(0) int from,
                                              @RequestParam(defaultValue = "10") @Min(0) int size) {
         return service.getAll(pinned, from, size);

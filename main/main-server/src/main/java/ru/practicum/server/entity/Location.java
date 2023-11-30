@@ -8,6 +8,9 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.Embeddable;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,6 +20,13 @@ import javax.persistence.Embeddable;
 @ToString
 @Embeddable
 public class Location {
+    @NotNull
+    @Min(-180)
+    @Max(180)
     private Double lat;
+
+    @NotNull
+    @Min(-180)
+    @Max(180)
     private Double lon;
 }
