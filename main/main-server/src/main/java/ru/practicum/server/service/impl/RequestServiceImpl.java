@@ -48,7 +48,7 @@ public class RequestServiceImpl implements RequestService {
         if (event.getInitiator().getId().equals(userId)) {
             throw new AlreadyExistsException("Event with ID = " + eventId + " is your event.");
         }
-        if (event.getParticipantLimit() > 0 && event.getParticipantLimit() - event.getConfirmedRequests() <= 0) {
+        if (event.getParticipantLimit() > 0 && event.getParticipantLimit() - getCountRequestsByEventId(eventId) <= 0) {
             throw new AlreadyExistsException("The limit of requests to participate in the event has been reached.");
         }
 
@@ -63,7 +63,6 @@ public class RequestServiceImpl implements RequestService {
 
         if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
             request.setStatus(RequestStatus.CONFIRMED);
-            event.setConfirmedRequests(event.getConfirmedRequests() + 1);
         }
 
         eventRepository.save(event);
@@ -123,5 +122,12 @@ public class RequestServiceImpl implements RequestService {
         return requestRepository.findById(requestId).orElseThrow(
                 () -> new NotFoundException("Request with ID = " + requestId + " does not exists")
         );
+    }
+
+    public Long getCountRequestsByEventId(long eventId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QRequest.request.event.id.eq(eventId));
+        builder.and(QRequest.request.status.eq(RequestStatus.CONFIRMED));
+        return requestRepository.count(builder);
     }
 }

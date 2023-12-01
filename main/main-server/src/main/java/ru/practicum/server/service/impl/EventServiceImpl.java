@@ -47,6 +47,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.aspectj.runtime.internal.Conversions.longValue;
 import static ru.practicum.constants.Constants.SORT_BY_ID_ASC;
 
 
@@ -73,10 +74,9 @@ public class EventServiceImpl implements EventService {
 
         event.setInitiator(user);
         event.setCreatedOn(LocalDateTime.now());
-        event.setConfirmedRequests(0L);
         event.setState(EventStatus.PENDING);
 
-        return eventMapper.toEventFullDto(eventRepository.save(event));
+        return eventMapper.toEventFullDto(eventRepository.save(event), 0L);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class EventServiceImpl implements EventService {
         Event event = getEventById(eventId);
 
         if (event.getInitiator().getId().equals(userId)) {
-            return eventMapper.toEventFullDto(event);
+            return eventMapper.toEventFullDto(event, getCountRequestsByEventId(eventId));
         }
 
         throw new NotFoundException("Event with ID = " + eventId + " does not exists.");
@@ -132,7 +132,7 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.PENDING);
         }
 
-        return eventMapper.toEventFullDto(eventRepository.save(event));
+        return eventMapper.toEventFullDto(eventRepository.save(event), getCountRequestsByEventId(eventId));
     }
 
     @Override
@@ -208,7 +208,7 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findAll(builder, pageable)
                 .getContent()
                 .stream()
-                .map(eventMapper::toEventFullDto)
+                .map(element -> eventMapper.toEventFullDto(element, getCountRequestsByEventId(element.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -222,7 +222,7 @@ public class EventServiceImpl implements EventService {
 
         statClient.postStat(httpServletRequest);
 
-        EventFullDto dto = eventMapper.toEventFullDto(event);
+        EventFullDto dto = eventMapper.toEventFullDto(event, getCountRequestsByEventId(eventId));
         dto.setViews((long) statClient.getStats(event.getCreatedOn(),
                         LocalDateTime.now(),
                         List.of("/events/" + eventId),
@@ -261,7 +261,7 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.CANCELED);
         }
 
-        return eventMapper.toEventFullDto(eventRepository.save(event));
+        return eventMapper.toEventFullDto(eventRepository.save(event), getCountRequestsByEventId(eventId));
     }
 
     @Override
@@ -293,7 +293,7 @@ public class EventServiceImpl implements EventService {
             throw new AlreadyExistsException("Event not moderated.");
         }
         if (status.equals(RequestStatus.CONFIRMED) &&
-                event.getParticipantLimit() - event.getConfirmedRequests() <= 0) {
+                event.getParticipantLimit() - getCountRequestsByEventId(eventId) <= 0) {
             throw new AlreadyExistsException("The limit of requests to participate in the event has been reached");
         }
 
@@ -311,11 +311,9 @@ public class EventServiceImpl implements EventService {
                     if (!r.getStatus().equals(RequestStatus.PENDING)) {
                         throw new AlreadyExistsException("Request with ID = " + r.getId() + " not PENDING.");
                     }
-
-                    if (event.getParticipantLimit() - event.getConfirmedRequests() <= 0) {
+                    if (event.getParticipantLimit() - getCountRequestsByEventId(eventId) <= 0) {
                         r.setStatus(RequestStatus.REJECTED);
                     } else {
-                        event.setConfirmedRequests(event.getConfirmedRequests() + 1);
                         r.setStatus(status);
                     }
                 });
@@ -413,7 +411,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (onlyAvailable != null && onlyAvailable) {
-            builder.and((QEvent.event.participantLimit.subtract(QEvent.event.confirmedRequests)).loe(1));
+            builder.and((QEvent.event.participantLimit.subtract(getCountRequestsByEventId(longValue(QEvent.event.id))))
+                    .loe(1));
         }
 
         if (paid != null) {
@@ -452,5 +451,12 @@ public class EventServiceImpl implements EventService {
         });
 
         return views;
+    }
+
+    public long getCountRequestsByEventId(long eventId) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QRequest.request.event.id.eq(eventId));
+        builder.and(QRequest.request.status.eq(RequestStatus.CONFIRMED));
+        return requestRepository.count(builder);
     }
 }

@@ -18,7 +18,8 @@ public interface EventMapper {
     @Mapping(source = "category", target = "category")
     Event toEvent(NewEventDto newEventDto, Category category, User initiator);
 
-    EventFullDto toEventFullDto(Event event);
+    @Mapping(source = "confirmedRequests", target = "confirmedRequests")
+    EventFullDto toEventFullDto(Event event, Long confirmedRequests);
 
     EventShortDto toEventShortDto(Event event);
 }
