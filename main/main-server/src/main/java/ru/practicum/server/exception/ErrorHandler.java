@@ -53,21 +53,9 @@ public class ErrorHandler {
                 .build();
     }
 
-    @ExceptionHandler({ValidationException.class})
+    @ExceptionHandler({ValidationException.class, MethodArgumentNotValidException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBadRequest(final RuntimeException e) {
-        log.debug("Получен статус 400 Bad Request Error {}", e.getMessage(), e);
-        return ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .reason(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(e.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
-
-    @ExceptionHandler({MethodArgumentNotValidException.class})
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleMethodArgumentNotValid(final Exception e) {
         log.debug("Получен статус 400 Bad Request Error {}", e.getMessage(), e);
         return ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST.value())

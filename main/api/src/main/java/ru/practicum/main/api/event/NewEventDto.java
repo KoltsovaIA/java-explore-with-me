@@ -48,6 +48,7 @@ public class NewEventDto {
     @NotNull
     private Boolean requestModeration = true;
 
+    @NotNull
     @PositiveOrZero
     private long participantLimit = 0L;
 

@@ -84,7 +84,7 @@ public class EventServiceImpl implements EventService {
         Event event = getEventById(eventId);
 
         if (event.getInitiator().getId().equals(userId)) {
-            return eventMapper.toEventFullDto(event, getCountRequestsByEventId(eventId));
+            return eventMapper.toEventFullDto(event, getCountConfirmedRequestsByEventId(eventId));
         }
 
         throw new NotFoundException("Event with ID = " + eventId + " does not exists.");
@@ -132,7 +132,7 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.PENDING);
         }
 
-        return eventMapper.toEventFullDto(eventRepository.save(event), getCountRequestsByEventId(eventId));
+        return eventMapper.toEventFullDto(eventRepository.save(event), getCountConfirmedRequestsByEventId(eventId));
     }
 
     @Override
@@ -169,15 +169,24 @@ public class EventServiceImpl implements EventService {
 
         List<Event> events = new ArrayList<>(eventRepository.findAll(builder, pageable)
                 .getContent());
-        Comparator<Event> eventComparator = Comparator.comparing(Event::getCreatedOn);
+        Comparator<Event> eventComparator = Comparator.comparing(event ->
+                {
+                    if (event.getPublishedOn() != null) {
+                        return event.getPublishedOn();
+                    } else {
+                        return LocalDateTime.MAX;
+                    }
+                }
+        );
+
         Collection<EventShortDto> dtos = events
                 .stream()
                 .map(eventMapper::toEventShortDto)
                 .collect(Collectors.toList());
 
         if (!dtos.isEmpty()) {
-            Event minCreatedOnEvent = events.stream().min(eventComparator).get();
-            Map<Long, Long> views = getViews(dtos, minCreatedOnEvent.getCreatedOn());
+            Event minPublishedOnEvent = events.stream().min(eventComparator).get();
+            Map<Long, Long> views = getViews(dtos, minPublishedOnEvent.getPublishedOn());
 
             dtos.forEach(dto -> dto.setViews(views.get(dto.getId())));
         }
@@ -205,10 +214,16 @@ public class EventServiceImpl implements EventService {
 
         Pageable pageable = new OffsetBasedPageRequest(from, size, SORT_BY_ID_ASC);
 
+        Map<Long, Long> confirmedRequestcounterMap = new HashMap<>(getConfirmedRecuestCounterMap());
+
+        System.out.println(confirmedRequestcounterMap);
+
         return eventRepository.findAll(builder, pageable)
                 .getContent()
                 .stream()
-                .map(element -> eventMapper.toEventFullDto(element, getCountRequestsByEventId(element.getId())))
+                .map(element -> eventMapper.toEventFullDto(element,
+                        confirmedRequestcounterMap.get(element.getId()) == null ? 0 :
+                                confirmedRequestcounterMap.get(element.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -222,7 +237,7 @@ public class EventServiceImpl implements EventService {
 
         statClient.postStat(httpServletRequest);
 
-        EventFullDto dto = eventMapper.toEventFullDto(event, getCountRequestsByEventId(eventId));
+        EventFullDto dto = eventMapper.toEventFullDto(event, getCountConfirmedRequestsByEventId(eventId));
         dto.setViews((long) statClient.getStats(event.getCreatedOn(),
                         LocalDateTime.now(),
                         List.of("/events/" + eventId),
@@ -253,6 +268,7 @@ public class EventServiceImpl implements EventService {
 
         if (dto.getStateAction() != null
                 && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
+            event.setPublishedOn(LocalDateTime.now());
             event.setState(EventStatus.PUBLISHED);
         }
 
@@ -261,7 +277,7 @@ public class EventServiceImpl implements EventService {
             event.setState(EventStatus.CANCELED);
         }
 
-        return eventMapper.toEventFullDto(eventRepository.save(event), getCountRequestsByEventId(eventId));
+        return eventMapper.toEventFullDto(eventRepository.save(event), getCountConfirmedRequestsByEventId(eventId));
     }
 
     @Override
@@ -293,7 +309,7 @@ public class EventServiceImpl implements EventService {
             throw new AlreadyExistsException("Event not moderated.");
         }
         if (status.equals(RequestStatus.CONFIRMED) &&
-                event.getParticipantLimit() - getCountRequestsByEventId(eventId) <= 0) {
+                event.getParticipantLimit() - getCountConfirmedRequestsByEventId(eventId) <= 0) {
             throw new AlreadyExistsException("The limit of requests to participate in the event has been reached");
         }
 
@@ -311,7 +327,7 @@ public class EventServiceImpl implements EventService {
                     if (!r.getStatus().equals(RequestStatus.PENDING)) {
                         throw new AlreadyExistsException("Request with ID = " + r.getId() + " not PENDING.");
                     }
-                    if (event.getParticipantLimit() - getCountRequestsByEventId(eventId) <= 0) {
+                    if (event.getParticipantLimit() - getCountConfirmedRequestsByEventId(eventId) <= 0) {
                         r.setStatus(RequestStatus.REJECTED);
                     } else {
                         r.setStatus(status);
@@ -411,8 +427,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (onlyAvailable != null && onlyAvailable) {
-            builder.and((QEvent.event.participantLimit.subtract(getCountRequestsByEventId(longValue(QEvent.event.id))))
-                    .loe(1));
+            builder.and((QEvent.event.participantLimit.subtract(getCountConfirmedRequestsByEventId
+                    (longValue(QEvent.event.id)))).loe(1));
         }
 
         if (paid != null) {
@@ -453,10 +469,20 @@ public class EventServiceImpl implements EventService {
         return views;
     }
 
-    public long getCountRequestsByEventId(long eventId) {
+    public long getCountConfirmedRequestsByEventId(long eventId) {
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(QRequest.request.event.id.eq(eventId));
         builder.and(QRequest.request.status.eq(RequestStatus.CONFIRMED));
         return requestRepository.count(builder);
+    }
+
+    private Map<Long, Long> getConfirmedRecuestCounterMap() {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QRequest.request.status.eq(RequestStatus.CONFIRMED));
+        List<Request> requestList = (List<Request>) requestRepository.findAll(builder);
+        return requestList
+                .stream()
+                .collect(Collectors.groupingBy(map -> map.getEvent().getId(), Collectors.counting()));
+
     }
 }
