@@ -169,8 +169,7 @@ public class EventServiceImpl implements EventService {
 
         List<Event> events = new ArrayList<>(eventRepository.findAll(builder, pageable)
                 .getContent());
-        Comparator<Event> eventComparator = Comparator.comparing(event ->
-                {
+        Comparator<Event> eventComparator = Comparator.comparing(event -> {
                     if (event.getPublishedOn() != null) {
                         return event.getPublishedOn();
                     } else {
@@ -427,8 +426,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (onlyAvailable != null && onlyAvailable) {
-            builder.and((QEvent.event.participantLimit.subtract(getCountConfirmedRequestsByEventId
-                    (longValue(QEvent.event.id)))).loe(1));
+            builder.and((QEvent.event.participantLimit.subtract(getCountConfirmedRequestsByEventId(
+                    longValue(QEvent.event.id)))).loe(1));
         }
 
         if (paid != null) {
