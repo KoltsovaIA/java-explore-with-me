@@ -15,50 +15,42 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
 
-  stats-client:
-    build: statistic/client/
-    container_name: ewm-stats-client
-    ports:
-      - "8080:8080"
-    depends_on:
-      [stats-server]
-    environment:
-      - STAT_CLIENT_PORT=8080
-      - STAT_SERVER_ADDRESS=http://ewm-stats:9090
-
   stats-db:
-    image: postgres:14-alpine
+    image: postgres:14.0-alpine
     container_name: stats-db
     ports:
-      - "5432:5432"
+      - "6432:5432"
     environment:
       POSTGRES_DB: emw_stats_db
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
       hostname: emw_stats_db
 
-#  ewm-db:
-#    image: postgres:15.1-alpine
-#    container_name: ewm-service-db
-#    ports:
-#      - "6542:5432"
-#    environment:
-#      - POSTGRES_DB=ewm
-#      - POSTGRES_USER=root
-#      - POSTGRES_PASSWORD=root
-#
-#  ewm-service:
-#    build: ewm-service
-#    image: ewm-service
-#    container_name: ewm-service
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      - ewm-db
-#      - stats-server
-#    environment:
-#      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm
-#      - SPRING_DATASOURCE_USER=root
-#      - SPRING_DATASOURCE_PASSWORD=root
-#      - SERVICES_STATSSERVICE_URL=http://stats-service:9090
-#      - JAVA_OPTS=-Djdk.httpclient.HttpClient.log=errors,requests
+  main-server:
+    build: main/main-server/
+    container_name: ewm-main-server
+    ports:
+      - "8080:8080"
+      - "8091:8091"
+    depends_on:
+      [ main-db, stats-server ]
+    environment:
+      MAIN_SERVER_PORT: 8080
+      STAT_SERVER_URI: http://stats-server:9090
+      APP_NAME: ewm-service
+      DB_HOST: emw_main_db
+      DB_PORT: 5432
+      DB_NAME: ewm_main_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+
+  main-db:
+    image: postgres:14.0-alpine
+    container_name: main-db
+    ports:
+      - "6433:5432"
+    environment:
+      POSTGRES_DB: ewm_main_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    hostname: emw_main_db
