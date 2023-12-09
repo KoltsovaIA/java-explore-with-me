@@ -17,6 +17,7 @@ public class EventGetAllByAdminParameters {
     private List<Long> users;
     private List<Long> categories;
     private List<EventStatus> states;
+    private Boolean onlyPending;
     private int from;
     private int size;
 }

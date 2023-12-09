@@ -213,12 +213,11 @@ public class EventServiceImpl implements EventService {
 
         Pageable pageable = new OffsetBasedPageRequest(from, size, SORT_BY_ID_ASC);
 
-        Map<Long, Long> confirmedRequestcounterMap = new HashMap<>(getConfirmedRecuestCounterMap());
+        List<Event> eventList = eventRepository.findAll(builder, pageable).getContent();
 
-        System.out.println(confirmedRequestcounterMap);
+        Map<Long, Long> confirmedRequestcounterMap = new HashMap<>(getConfirmedRequestCounterMap(eventList));
 
-        return eventRepository.findAll(builder, pageable)
-                .getContent()
+        return eventList
                 .stream()
                 .map(element -> eventMapper.toEventFullDto(element,
                         confirmedRequestcounterMap.get(element.getId()) == null ? 0 :
@@ -269,11 +268,13 @@ public class EventServiceImpl implements EventService {
                 && dto.getStateAction().equals(StateAction.PUBLISH_EVENT)) {
             event.setPublishedOn(LocalDateTime.now());
             event.setState(EventStatus.PUBLISHED);
+            event.setModeratorComment(null);
         }
 
         if (dto.getStateAction() != null
                 && dto.getStateAction().equals(StateAction.REJECT_EVENT)) {
             event.setState(EventStatus.CANCELED);
+            event.setModeratorComment(dto.getModeratorComment());
         }
 
         return eventMapper.toEventFullDto(eventRepository.save(event), getCountConfirmedRequestsByEventId(eventId));
@@ -475,8 +476,9 @@ public class EventServiceImpl implements EventService {
         return requestRepository.count(builder);
     }
 
-    private Map<Long, Long> getConfirmedRecuestCounterMap() {
+    private Map<Long, Long> getConfirmedRequestCounterMap(List<Event> eventList) {
         BooleanBuilder builder = new BooleanBuilder();
+        builder.and(QRequest.request.event.in(eventList));
         builder.and(QRequest.request.status.eq(RequestStatus.CONFIRMED));
         List<Request> requestList = (List<Request>) requestRepository.findAll(builder);
         return requestList

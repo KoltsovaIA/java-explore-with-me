@@ -82,4 +82,7 @@ public class Event {
     @Column(name = "state")
     @Enumerated(EnumType.STRING)
     private EventStatus state;
+
+    @Column(name = "moderator_comment", length = 2000)
+    private String moderatorComment;
 }

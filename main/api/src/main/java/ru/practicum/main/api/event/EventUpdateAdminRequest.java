@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import ru.practicum.constants.Constants;
 import ru.practicum.validator.DateAfterValueHourFutureValid;
+import ru.practicum.validator.EnumAllowedValid;
 
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Getter
@@ -17,4 +19,10 @@ public class EventUpdateAdminRequest extends EventUpdateRequest {
     @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     @DateAfterValueHourFutureValid(value = Constants.TWO_AS_STRING)
     private LocalDateTime eventDate;
+
+    @EnumAllowedValid(enumClass = StateAction.class, allowed = {"PUBLISH_EVENT", "REJECT_EVENT"})
+    private StateAction stateAction;
+
+    @Size(min = 10, max = 2000)
+    private String moderatorComment;
 }
