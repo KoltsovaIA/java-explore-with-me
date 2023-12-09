@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.main.api.error.ErrorResponse;
 import ru.practicum.main.util.exception.AlreadyExistsException;
+import ru.practicum.main.util.exception.BadRequestException;
 import ru.practicum.main.util.exception.NotFoundException;
 
 import javax.validation.ValidationException;
@@ -53,7 +54,7 @@ public class ErrorHandler {
                 .build();
     }
 
-    @ExceptionHandler({ValidationException.class, MethodArgumentNotValidException.class})
+    @ExceptionHandler({ValidationException.class, MethodArgumentNotValidException.class, BadRequestException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBadRequest(final RuntimeException e) {
         log.debug("Получен статус 400 Bad Request Error {}", e.getMessage(), e);

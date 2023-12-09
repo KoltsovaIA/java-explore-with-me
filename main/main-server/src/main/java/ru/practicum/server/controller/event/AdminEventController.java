@@ -42,6 +42,7 @@ public class AdminEventController {
             @RequestParam(required = false) List<Long> users,
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) List<EventStatus> states,
+            @RequestParam(required = false) Boolean onlyPending,
             @RequestParam(defaultValue = "0") @Min(0) int from,
             @RequestParam(defaultValue = "10") @Min(1) int size) {
         return service.getAllByAdmin(EventGetAllByAdminParameters.builder()
@@ -50,6 +51,7 @@ public class AdminEventController {
                 .users(users)
                 .categories(categories)
                 .states(states)
+                .onlyPending(onlyPending)
                 .from(from)
                 .size(size)
                 .build());

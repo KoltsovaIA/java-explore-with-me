@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS event
     state              VARCHAR(16),
     create_date        TIMESTAMP WITHOUT TIME ZONE,
     published_date     TIMESTAMP WITHOUT TIME ZONE,
+    moderator_comment VARCHAR(2000),
     CONSTRAINT PK_EVENT PRIMARY KEY (id),
     CONSTRAINT FK_EVENT_USER FOREIGN KEY (initiator_id) REFERENCES users (id),
     CONSTRAINT FK_EVENT_CATEGORY FOREIGN KEY (category_id) REFERENCES category (id) ON UPDATE CASCADE
